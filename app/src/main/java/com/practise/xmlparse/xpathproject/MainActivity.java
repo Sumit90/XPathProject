@@ -44,7 +44,7 @@ public class MainActivity extends ActionBarActivity {
     private final String TAG="MYLOGS";
 
     private boolean statusMerging=false;
-
+    private WriteXmlFile writeFile;
 
 
     @Override
@@ -69,38 +69,52 @@ public class MainActivity extends ActionBarActivity {
                         Node rootNodeFile1=parseFile1.getNode(rootElementName);
                         Node rootNodeFile2=parseFile2.getNode(rootElementName);
 
-                        NamedNodeMap nodeMapRoot1= rootNodeFile1.getAttributes();
-                        NamedNodeMap nodeMapRoot2= rootNodeFile2.getAttributes();
-
-                        //add root parameters to list after comparing with initial root elements
-                        addRootParameters(ParameterListFile1,nodeMapRoot1,rootElementName);
-                        addRootParameters(ParameterListFile2,nodeMapRoot2,rootElementName);
-
-                        addNodesToList(ParameterListFile1,parseFile1);
-                        addNodesToList(ParameterListFile2,parseFile2);
-
-                       // printRootList(ParameterListFile1.getRootParameterList());
-                        //printRootList(ParameterListFile2.getRootParameterList());
-
-                        printRootList(ParameterListFile1.getNodeElementList());
-                        printRootList(ParameterListFile2.getNodeElementList());
-
-
-                        List<RootElementPOJO> finalRootElementList =getMergedRootList
-                                (ParameterListFile1.getRootParameterList(),
-                                        ParameterListFile2.getRootParameterList(),
-                                        initialParameterList.getInitialRootList());
-
-
-                        if(finalRootElementList!=null && statusMerging)
+                        if(rootNodeFile1!=null && rootNodeFile2!=null)
                         {
-                            Log.d(TAG,"---------- print final list start-------------");
-                            printRootList(finalRootElementList);
+                            NamedNodeMap nodeMapRoot1= rootNodeFile1.getAttributes();
+                            NamedNodeMap nodeMapRoot2= rootNodeFile2.getAttributes();
+
+                            //add root parameters to list after comparing with initial root elements
+                            addRootParameters(ParameterListFile1,nodeMapRoot1,rootElementName);
+                            addRootParameters(ParameterListFile2,nodeMapRoot2,rootElementName);
+
+                            addNodesToList(ParameterListFile1,parseFile1);
+
+                            /*List<RootElementPOJO> finalRootElementList =getMergedRootList
+                                    (ParameterListFile1.getRootParameterList(),
+                                            ParameterListFile2.getRootParameterList(),
+                                            initialParameterList.getInitialRootList());
+
+                            if(finalRootElementList!=null && statusMerging)
+                            {
+                                ParameterListFinal.setRootParameterList(finalRootElementList);
+                                Log.d(TAG,"---------- print final list start-------------");
+                                writeFile = new WriteXmlFile(ParameterListFinal);
+                                writeFile.writeXml();
+
+                            }
+                            else
+                            {
+                                Log.d(TAG,"-------Cannot write the XML File-----------------");
+                            }*/
+
                         }
                         else
                         {
                             Log.d(TAG,"-------Cannot write the XML File-----------------");
+                            Log.d(TAG,"Root Element Name wrong. Not found in XML");
+
                         }
+
+
+                       // addNodesToList(ParameterListFile1,parseFile1);
+                       // addNodesToList(ParameterListFile2,parseFile2);
+
+                       // printRootList(ParameterListFile1.getRootParameterList());
+                        //printRootList(ParameterListFile2.getRootParameterList());
+
+
+
 
                     }
                 }
@@ -149,16 +163,18 @@ public class MainActivity extends ActionBarActivity {
             ParameterListFile2 =new ParametersList();
             ParameterListFinal=new ParametersList();
 
-            addInitialRootParameters("/Employees","",ComparisonConstants.COMPARE_GREATER_EQUAL_FILE1);
-            //addInitialRootParameters("/fastLogcodes@version","",ComparisonConstants.COMPARE_GREATER_FILE2);
-            //addInitialRootParameters("\fastLogcodes@B","",ComparisonConstants.NO_COMPARISON);
-           // addInitialRootParameters("\fastLogcodes@C","",ComparisonConstants.NO_COMPARISON);
-            //addInitialNodeParameters("/Employees/Employee/name/text();T","",ComparisonConstants.NO_COMPARISON);
-            addInitialNodeParameters("/Employees/Employee[@id];A","",ComparisonConstants.NO_COMPARISON);
-           // addInitialNodeParameters("/fastLogcodes/Lte/A[@attr]/text();AT","",ComparisonConstants.NO_COMPARISON);
-            //addInitialNodeParameters("/fastLogcodes/Lte/A[@attr];KA","",ComparisonConstants.NO_COMPARISON);
+             addInitialRootParameters("/Employees","",ComparisonConstants.NO_COMPARISON);
+             addInitialRootParameters("/Employees@version","",ComparisonConstants.COMPARE_GREATER_EQUAL_FILE2);
+             addInitialRootParameters("/Employees@name","",ComparisonConstants.COMPARE_EQUAL);
+             addInitialRootParameters("/Employees@location","",ComparisonConstants.PICK_FROM_FILE2);
 
-            printRootList(initialParameterList.getInitialRootList());
+
+            addInitialNodeParameters("","","","","/Employees/Employee",
+                    null,ComparisonConstants.NODE,ComparisonConstants.NO_COMPARISON);
+
+
+
+            //printRootList(initialParameterList.getInitialRootList());
 
             isInitSuccess=true;
         }
@@ -271,20 +287,19 @@ public class MainActivity extends ActionBarActivity {
                                                     throws XPathExpressionException
     {
         //Get all initial Node attributes set by the user
-        List<RootElementPOJO> initialNodes = initialParameterList.getInitialNodeAttributeList();
+        List<NodeElementPOJO> initialNodes = initialParameterList.getInitialNodeAttributeList();
 
-        RootElementPOJO rootElementPOJO=null;
-        String [] splitNodeElement=null;
+        NodeElementPOJO nodeElementPOJO=null;
         String elementType="";
-        int splitLength=0;
         NodeList nodeList=null;
+        String parentReference="";
 
         OUTER_LOOP:for (int count=0;count<initialNodes.size();count++) {
-            rootElementPOJO = initialNodes.get(count);
 
-            splitNodeElement=rootElementPOJO.getElementName().split(ComparisonConstants.DELIMINATOR);
-            splitLength=splitNodeElement.length;
-            elementType=splitNodeElement[splitLength-1];
+            nodeElementPOJO = initialNodes.get(count);
+            elementType=nodeElementPOJO.getElementType();
+            parentReference=nodeElementPOJO.getParentReferenceAddress();
+
 
             if(!(elementType.equals(ComparisonConstants.NODE)||
                     elementType.equals(ComparisonConstants.ATTRIBUTE)||
@@ -298,27 +313,42 @@ public class MainActivity extends ActionBarActivity {
                 break OUTER_LOOP;
             }
 
+
             switch (elementType)
             {
                 case ComparisonConstants.NODE:
-                     nodeList = parser.getNodeList(splitNodeElement[0]);
+
+
+                     nodeList = parser.getNodeList(parentReference);
 
                     for (int i = 0; i < nodeList.getLength(); i++) {
+
                         Node n=nodeList.item(i);
-                        paramList.addNodeElement(new RootElementPOJO(rootElementPOJO.getElementName(),
-                                n.getNodeName(),rootElementPOJO.getModeOfComparison()));
-                       Log.d(TAG,n.getNodeName());
+                        Log.d(TAG,n.getFirstChild().getNodeValue());
+                        Log.d(TAG,n.getFirstChild().getNodeName());
+
 
                     }
+
+
+                    /*for (int i = 0; i < nodeList.getLength(); i++) {
+                        Node n=nodeList.item(i);
+
+                        paramList.addNodeElement(new NodeElementPOJO());
+                       Log.d(TAG,n.getNodeName());
+
+                    }*/
+
+                 Log.d(TAG,nodeList.toString()) ;
 
                     break;
 
 
                 case ComparisonConstants.ATTRIBUTE:
 
-                     nodeList = parser.getNodeList(splitNodeElement[0]);
-                     String []splitAttrName=splitNodeElement[0].split(ComparisonConstants.DELIMINATOR_ATTRIBUTE);
-                     String attributeName=getAttributeName(splitAttrName[1]);
+                     /*nodeList = parser.getNodeList(splitNodeElement[0]);
+                     splitAttrName=splitNodeElement[0].split(ComparisonConstants.DELIMINATOR_ATTRIBUTE);
+                      attributeName=getAttributeName(splitAttrName[1]);
 
                     for(int i=0;i<nodeList.getLength();i++)
                     {
@@ -333,13 +363,13 @@ public class MainActivity extends ActionBarActivity {
                                                         rootElementPOJO.getModeOfComparison()));
                             }
 
-                    }
+                    }*/
 
                     break;
 
                 case ComparisonConstants.TEXT:
 
-                    nodeList = parser.getNodeList(splitNodeElement[0]);
+                   /* nodeList = parser.getNodeList(splitNodeElement[0]);
                     for(int i=0;i<nodeList.getLength();i++)
                     {
                         Node n=nodeList.item(i);
@@ -349,7 +379,7 @@ public class MainActivity extends ActionBarActivity {
                                 n.getNodeValue(),
                                 rootElementPOJO.getModeOfComparison()));
 
-                    }
+                    }*/
 
                     break;
 
@@ -359,9 +389,32 @@ public class MainActivity extends ActionBarActivity {
 
                 case ComparisonConstants.KEY_ATTRIBUTE:
 
+                   /* nodeList = parser.getNodeList(splitNodeElement[0]);
+                    splitAttrName=splitNodeElement[0].split(ComparisonConstants.DELIMINATOR_ATTRIBUTE);
+                     attributeName=getAttributeName(splitAttrName[1]);
+
+                    for(int i=0;i<nodeList.getLength();i++) {
+                        Log.d(TAG,"-------------ComparisonConstants.KEY_ATTRIBUTE-----------");
+                        Node n = nodeList.item(i);
+                        Log.d(TAG,"-------------ComparisonConstants.KEY_ATTRIBUTE-----------");
+                    }*/
+
+
                     break;
 
                 case ComparisonConstants.KEY_TEXT:
+
+                   /* nodeList = parser.getNodeList(splitNodeElement[0]);
+                    for(int i=0;i<nodeList.getLength();i++)
+                    {
+                        Log.d(TAG,"-------------ComparisonConstants.KEY_TEXT-----------");
+                        Node n=nodeList.item(i);
+                        Log.d(TAG,rootElementPOJO.getElementName());
+                        Log.d(TAG,n.getNodeValue());
+
+                        Log.d(TAG,"-------------ComparisonConstants.KEY_TEXT-----------");
+                    }*/
+
 
                     break;
 
@@ -787,9 +840,14 @@ public class MainActivity extends ActionBarActivity {
 
   //--------------------------------------------------------------------------------------------------
     //This function is used to add Initial Node attributes to be used for comparing and extracting
-    void addInitialNodeParameters(String attributeName,String value,int mode)
+    void addInitialNodeParameters(String keyChildName,String keyChildValue,String valueChildName,
+                                  String valueChildValue, String parentReferenceAddress,
+                                  Node parentReferenceNode,String nodeType, int modeOfComparison)
     {
-        initialParameterList.addInitialNodeAttribute(new RootElementPOJO(attributeName,value, mode));
+        initialParameterList.addInitialNodeAttribute(new NodeElementPOJO(keyChildName,keyChildValue,
+                valueChildName,valueChildValue,parentReferenceAddress,parentReferenceNode,nodeType,
+                modeOfComparison));
+
     }
 
     //--------------------------------------------------------------------------------------------------

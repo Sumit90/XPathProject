@@ -14,14 +14,14 @@ public class ParametersList {
     private List<RootElementPOJO> rootAttributes;
 
     // This will contain node elements
-    private List<RootElementPOJO> nodeElementList;
+    private List<NodeElementPOJO> nodeElementList;
 
 
 //--------------------------------------------------------------------------------------------------
     public ParametersList()
     {
         rootAttributes =new ArrayList<RootElementPOJO>() ;
-        nodeElementList =new ArrayList<RootElementPOJO>() ;
+        nodeElementList =new ArrayList<NodeElementPOJO>() ;
 
     }
 //--------------------------------------------------------------------------------------------------
@@ -40,13 +40,13 @@ public class ParametersList {
 
 //--------------------------------------------------------------------------------------------------
     //Method used to add node  element to the List
-    public void addNodeElement(RootElementPOJO nodeElement)
+    public void addNodeElement(NodeElementPOJO nodeElement)
     {
         nodeElementList.add(nodeElement);
     }
     //--------------------------------------------------------------------------------------------------
 //Method used to get rootAttributes List containing root elements
-    public List<RootElementPOJO> getNodeElementList()
+    public List<NodeElementPOJO> getNodeElementList()
     {
         return nodeElementList;
     }
